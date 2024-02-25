@@ -1,0 +1,295 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model region {
+  code String @id
+  name String
+}
+
+model commodities {
+  id                   String                 @id @default(uuid())
+  name                 String
+  icon                 String
+  planting_type         Json                   
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  deletedAt            DateTime?
+  disease_distribution disease_distribution[]
+  commodity_collectors commodity_collectors[]
+  planting             planting[]
+}
+
+model commodity_collectors {
+  id          String      @id @default(uuid())
+  commodityId String
+  collectorId String
+  price       Int         @default(0)
+  period      DateTime    @db.Date
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  commodities commodities @relation(fields: [commodityId], references: [id])
+  collectors  collectors  @relation(fields: [collectorId], references: [id])
+}
+
+model users {
+  id                       String                     @id @default(uuid())
+  email                    String                     @unique
+  password                 String
+  refreshToken             String?                    @unique
+  is_verified              Boolean                    @default(false)
+  has_session              Boolean                    @default(false)
+  roles                    String
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  deletedAt                DateTime?
+  change_password_tokens   change_password_tokens[]
+  user_verification_tokens user_verification_tokens[]
+  farmers                  farmers[]
+  collectors               collectors[]
+  offtakers                offtakers[]
+}
+
+model change_password_tokens {
+  id      String   @id @default(uuid())
+  userId  String
+  expires DateTime
+  token   String   @unique
+  users   users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model user_verification_tokens {
+  id      String   @id @default(uuid())
+  userId  String
+  expires DateTime
+  token   String   @unique
+  users   users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model farmers {
+  id                 String               @id @default(uuid())
+  userId             String
+  nik                String?
+  name               String
+  phone              String
+  provinceId         String
+  cityId             String
+  districtId         String
+  villageId          String
+  address            String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  users              users                @relation(fields: [userId], references: [id])
+  farmlands          farmlands[]
+  farmer_device      farmer_device[]
+  capital_assistance capital_assistance[]
+}
+
+model collectors {
+  id                   String                 @id @default(uuid())
+  userId               String
+  nik                  String?
+  name                 String
+  phone                String
+  provinceId           String
+  cityId               String
+  districtId           String
+  villageId            String
+  address              String
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  users                users                  @relation(fields: [userId], references: [id])
+  collector_device     collector_device[]
+  commodity_collectors commodity_collectors[]
+}
+
+model offtakers {
+  id                 String               @id @default(uuid())
+  userId             String
+  name               String
+  phone              String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  users              users                @relation(fields: [userId], references: [id])
+  companies          companies[]
+  capital_assistance capital_assistance[]
+}
+
+model companies {
+  id                String              @id @default(uuid())
+  offtakerId        String
+  nib               String
+  name              String
+  email             String?
+  phone             String?
+  provinceId        String?
+  cityId            String?
+  districtId        String?
+  villageId         String?
+  address           String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  offtakers         offtakers           @relation(fields: [offtakerId], references: [id])
+  company_documents company_documents[]
+}
+
+model company_documents {
+  id        String    @id @default(uuid())
+  companyId String
+  name      String
+  document  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  companies companies @relation(fields: [companyId], references: [id])
+}
+
+model farmer_device {
+  id          String   @id @default(uuid())
+  farmerId    String
+  deviceToken String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  farmers     farmers  @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+}
+
+model collector_device {
+  id          String     @id @default(uuid())
+  collectorId String
+  deviceToken String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  collectors  collectors @relation(fields: [collectorId], references: [id], onDelete: Cascade)
+}
+
+model disease_plants {
+  id                   String                 @id @default(uuid())
+  image                String
+  name                 String                 @unique
+  symtomps             String
+  howTo                String
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  disease_distribution disease_distribution[]
+}
+
+model farmlands {
+  id        String     @id @default(uuid())
+  farmerId  String
+  name      String
+  province  String
+  city      String
+  district  String
+  village   String
+  address   String
+  landArea  Float
+  polygon   Json
+  photo     String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  deletedAt DateTime?
+  farmers   farmers?   @relation(fields: [farmerId], references: [id])
+  planting  planting[]
+}
+
+model planting {
+  id                   String                 @id @default(uuid())
+  farmlandId           String
+  commodityId          String
+  unit                 String
+  planting_size        Float
+  planting_quantity    Float
+  production_cost      Float
+  planting_type        String
+  longitude            String
+  latitude             String
+  date                 DateTime               @db.Date
+  status               String
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  disease_distribution disease_distribution[]
+  farmlands            farmlands              @relation(fields: [farmlandId], references: [id])
+  commodities          commodities            @relation(fields: [commodityId], references: [id])
+  harvesting           harvesting[]
+  land_activities      land_activities[]
+  land_report_problem  land_report_problem[]
+}
+
+model harvesting {
+  id         String   @id @default(uuid())
+  plantingId String
+  date       DateTime @db.Date
+  amount     Float
+  status     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  planting   planting @relation(fields: [plantingId], references: [id])
+}
+
+model land_activities {
+  id         String   @id @default(uuid())
+  plantingId String
+  date       DateTime @db.Date
+  time       String
+  type       String
+  activity   Json
+  image      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  planting   planting @relation(fields: [plantingId], references: [id])
+}
+
+model disease_distribution {
+  id          String         @id @default(uuid())
+  plantingId  String
+  commodityId String
+  diseaseid   String
+  type        String
+  problem     String
+  image       String
+  status      String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  planting    planting       @relation(fields: [plantingId], references: [id])
+  commodities commodities    @relation(fields: [commodityId], references: [id])
+  disease     disease_plants @relation(fields: [diseaseid], references: [id])
+}
+
+model land_report_problem {
+  id         String   @id @default(uuid())
+  plantingId String
+  date       DateTime @db.Date
+  type       String
+  problem    String
+  image      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  planting   planting @relation(fields: [plantingId], references: [id])
+}
+
+model capital_assistance {
+  id               String    @id @default(uuid())
+  farmerId         String
+  offtakerId       String
+  submission_title String
+  total_land_area  Float
+  phone            String
+  amount           Float
+  bank_name        String
+  account_number   String
+  account_name     String
+  ktp_photo        String
+  farmer_photo     String
+  status           String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  farmers          farmers   @relation(fields: [farmerId], references: [id])
+  offtakers        offtakers @relation(fields: [offtakerId], references: [id])
+}
